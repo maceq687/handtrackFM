@@ -230,29 +230,43 @@ function ControlStream(name) {
     }
 }
 
+var zCache = [0, 0, 0, 0];
+zCache.offset = 0;
 
+function zCacheItem(item) {
+    zCache[zCache.offset++] = item;
+    zCache.offset %= zCache.length;
+}
 
 function runDetection(){
     model.detect(video).then(predictions => {
         model.renderPredictions(predictions, canvas, context, video);
         if (predictions[0]) {
-            var xPrmtr = predictions[0].bbox[0] + (predictions[0].bbox[2] / 2);
-            var yPrmtr = predictions[0].bbox[1] + (predictions[0].bbox[3] / 2);
-            var zPrmtr = Math.max(predictions[0].bbox[2] / 640, predictions[0].bbox[3] / 480);
-            xPrmtr = xPrmtr / 640; // video width
-            yPrmtr = yPrmtr / 480; // video height
-            zPrmtr = Math.min(Math.max((zPrmtr - 0.2) * 2, 0), 1);
+            var xCoordinate = predictions[0].bbox[0] + (predictions[0].bbox[2] / 2);
+            var yCoordinate = predictions[0].bbox[1] + (predictions[0].bbox[3] / 2);
+            var zCoordinate = Math.max(predictions[0].bbox[2] / 640, predictions[0].bbox[3] / 480);
+            xCoordinate = xCoordinate / 640; // video width
+            yCoordinate = yCoordinate / 480; // video height
+            zCoordinate = Math.min(Math.max((zCoordinate - 0.2) * 2, 0), 1);
+
+            // Calculate average of 4 most recent zCoordinate values
+            zCacheItem(zCoordinate);
+            var zCacheSum = 0;
+            for(var i = 0; i < zCache.length; i++) {
+                zCacheSum += zCache[i];
+            }
+            var zAverage = zCacheSum / zCache.length;
 
             // Link sliders to computer vision
             const sliderX = device.parametersById.get("carrier");
             if (sliderX)
-                sliderX.value = xPrmtr * 127;
+                sliderX.value = xCoordinate * 127;
             const sliderY = device.parametersById.get("modulator");
             if (sliderY)
-                sliderY.value = yPrmtr * 127;
+                sliderY.value = yCoordinate * 127;
             const sliderZ = device.parametersById.get("tremolo");
             if (sliderZ)
-                sliderZ.value = zPrmtr * 127;
+                sliderZ.value = zAverage * 127;
         }
     });
 }

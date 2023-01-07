@@ -52,3 +52,7 @@ h2, em {
 #rnbo-parameter-sliders > div > input:first-of-type {
     flex-grow: 1;
 }
+
+button {
+    margin: 6px 0px;
+}
